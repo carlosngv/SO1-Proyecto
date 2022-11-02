@@ -6,3 +6,7 @@ type Response struct {
 	Score	string			`json:"score"`
 	Phase	string			`json:"phase"`
 }
+
+type Responses struct {
+	Responses []Response `json:"data"`
+}
