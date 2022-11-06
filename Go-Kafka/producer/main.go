@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -24,10 +23,11 @@ func write(w http.ResponseWriter, request *http.Request) {
 	var data Data
 	json.NewDecoder((request.Body)).Decode(&data)
 
-	fmt.Printf("Data: `%v\n\n" , data)
-	fmt.Printf("Host: %v\n\n" , os.Getenv("HOSTADDR"))
+	fmt.Printf("Data: %v\n\n" , data)
+	// fmt.Printf("Host: %v\n\n" , os.Getenv("HOSTADDR"))
 
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", os.Getenv("HOSTADDR") + ":9092", "proyecto", 0)
+	// conn, _ := kafka.DialLeader(context.Background(), "tcp", os.Getenv("HOSTADDR") + ":9092", "proyecto", 0)
+	conn, _ := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", "proyecto", 0)
 	conn.SetWriteDeadline(time.Now().Add(time.Second * 10))
 	conn.WriteMessages(kafka.Message{Value: []byte("{\"team1\":\"" + data.Team1 + "\",\"team2\": \"" + data.Team2 + "\",\"Score\": \"" + data.Score + "\",\"phase\": \"" + data.Phase + "\"}")})
 

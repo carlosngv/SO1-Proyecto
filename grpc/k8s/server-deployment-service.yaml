@@ -1,39 +1,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: consumer-deployment
+  name: grpc-server-deployment
   labels:
-    app: kafka-consumer
+    app: grpc-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kafka-consumer
+      app: grpc-server
   template:
     metadata:
       labels:
-        app: kafka-consumer
+        app: grpc-server`
     spec:
       containers:
-        - name: kafka-consumer
-          image: gcr.io/so1-proyecto-g17/kafka-consumer:v0.0.1
+        - name: grpc-server
+          image: gcr.io/so1-proyecto-g17/grpc-server:v0.0.1
           imagePullPolicy: Always
           ports:
-            - containerPort: 8100
+            - containerPort: 5050
           env:
-            - name: HOSTADDR
-              value: "kafka-service"
             - name: MONGO_ADDRESS
               value: "mongodb://so1-mongodb:D6KMglupcEagiKMis6Fff213MAD63Yz3VNAxghsdIyQqADe6ch21EMfovPV9a2DlT0cXKzjb2gjvACDbbmd6HA==@so1-mongodb.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@so1-mongodb@"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: consumer-service
+  name: grpc-server-service
 spec:
   selector:
-      app: kafka-consumer
+      app: grpc-server
   type: LoadBalancer
   ports:
-    - port: 8100
+    - port: 5050
       protocol: TCP

@@ -3,19 +3,33 @@ package main
 import (
 	"context"
 	"fmt"
+	pb "grpc-server/confproto"
 	"log"
-	"net/http"
+	"net"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/gorilla/mux"
-	"github.com/segmentio/kafka-go"
+	"google.golang.org/grpc"
 )
 
-func saveResponse(response string) {
+const (
+	port = ":5050"
+)
+
+type Response struct {
+	Team1	string			`json:"team1"`
+	Team2	string			`json:"team2"`
+	Score	string			`json:"score"`
+	Phase	string			`json:"phase"`
+}
+
+type Server struct {
+	pb.UnimplementedGetInfoServer
+}
+
+func save_response(response string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -44,41 +58,28 @@ func saveResponse(response string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("Data successfully saved: \n")
 	fmt.Println(insertResult)
 }
 
-func consumeData(w http.ResponseWriter, request *http.Request) {
-
-	fmt.Println("Consuming data")
-
-	// conn, _ := kafka.DialLeader(context.Background(), "tcp", os.Getenv("HOSTADDR") + ":9092", "proyecto", 0)
-	conn, _ := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", "proyecto", 0)
-	conn.SetWriteDeadline(time.Now().Add(time.Second * 3))
-
-	batch := conn.ReadBatch(1e3, 1e6) // 1 - 1000
-	bytes := make([]byte, 1e3)
-	for {
-		_, err := batch.Read(bytes)
-		if err != nil {
-			break
-		}
-		fmt.Println(string(bytes))
-		saveResponse(string(bytes))
-
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+func (s *Server) ReturnInfo(ctx context.Context, in *pb.RequestId) (*pb.InfoReply, error) {
+	save_response(in.GetId())
+	fmt.Printf(">> Response delivered: %v\n", in.GetId())
+	return &pb.InfoReply{Info: ">> Response received by client: " + in.GetId()}, nil
 }
 
 func main() {
-	router := mux.NewRouter()
-	router.HandleFunc("/", consumeData).Methods("GET")
-	fmt.Println("Server on port", 8100)
-	err := http.ListenAndServe(":8100", router)
+
+	listener, err := net.Listen("tcp", port)
+
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("Error: %v", err)
 	}
 
+	s := grpc.NewServer()
+
+	pb.RegisterGetInfoServer(s, &Server{})
+
+	if err := s.Serve(listener); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
 }

@@ -1,15 +1,17 @@
-FROM golang:1.12.0-alpine3.9
-RUN mkdir /app
-## We copy everything in the root directory
-## into our /app directory
-ADD . /app
-## We specify that we now wish to execute
-## any further commands inside our /app
-## directory
+FROM golang:1.17-alpine
+
+ENV HOSTADDR kafka-service
+
 WORKDIR /app
-## we run go build to compile the binary
-## executable of our Go program
-RUN go build -o consumer .
-## Our start command which kicks off
-## our newly created binary executable
-CMD ["/app/consumer"]
+
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY . .
+
+RUN go build -o main .
+
+EXPOSE 8100
+
+CMD ["/app/main"]
